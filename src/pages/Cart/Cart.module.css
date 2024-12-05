@@ -1,0 +1,38 @@
+.title {
+  color: var(--mantine-color-white);
+  font-weight: 500;
+  font-size: rem(34);
+}
+
+@media (max-width: 768px) {
+  .title {
+    max-width: 100%;
+    font-size: rem(24);
+  }
+}
+
+.totalLabel {
+  color: var(--mantine-color-white);
+  font-weight: 500;
+  font-size: rem(20);
+  margin-top: rem(24);
+}
+
+@media (max-width: 768px) {
+  .totalLabel {
+    max-width: 100%;
+    font-size: rem(14);
+  }
+}
+
+.totalPrice {
+  font-size: rem(20);
+  margin-top: rem(24);
+}
+
+@media (max-width: 768px) {
+  .totalPrice {
+    max-width: 100%;
+    font-size: rem(14);
+  }
+}

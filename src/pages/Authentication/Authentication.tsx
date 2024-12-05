@@ -9,85 +9,99 @@ import {
   Paper,
   Group,
   Button,
-  Divider,
-  Select,
   Anchor,
   Stack,
-  Notification,
 } from "@mantine/core";
 import { IconCheck, IconX } from "@tabler/icons-react";
+import { createUser, loginUser } from "../../utils/data/UserAPI";
+import { useDispatch } from "react-redux";
+import { setCurrentUser } from "../../store/slices/userSlice";
+import { notifications } from "@mantine/notifications"; // Import Mantine Notification hook
 
 const AuthenticationForm = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  // const [value, setValue] = useState(null);
   const [type, toggle] = useToggle(["login", "register"]);
   const form = useForm({
     initialValues: {
-      email: "",
+      uname: "",
       name: "",
       password: "",
-      isAgent: {
-        userType: "",
-        pwd: "",
-      },
     },
 
     validate: {
-      email: (val) => (/^\S+@\S+$/.test(val) ? null : "Invalid email"),
+      uname: (val) => (val.length < 3 ? "Invalid username" : null),
       password: (val) =>
         val.length < 6 ? "Password should include at least 6 characters" : null,
-      isAgent: (val) =>
-        val.userType === "agent"
-          ? val.pwd === "t#t#Px*8hfgQPX["
-            ? null
-            : "Error"
-          : null,
     },
   });
 
   const handleAuth = async (values: {
-    email: string;
+    uname: string;
     password: string;
     name: string;
-    isAgent: { userType: string; pwd: string };
   }) => {
     if (type === "register") {
       try {
-        <Notification
-          icon={<IconCheck size="1.1rem" />}
-          withBorder
-          radius="md"
-          color="green"
-          title={`User Registered!`}
-        />;
-        navigate("/");
+        await createUser({
+          uname: values.uname,
+          password: values.password,
+        });
+
+        // Show success notification
+        notifications.show({
+          title: `User ${values.uname} created successfully!`,
+          message: "You can now log in.",
+          icon: <IconCheck size="1.1rem" />,
+          color: "green",
+        });
+        navigate("/auth"); // Redirect to login after registration
       } catch (error) {
-        <Notification
-          icon={<IconX size="1.1rem" />}
-          withBorder
-          radius="md"
-          color="red"
-          title={`${(error as Error).name} \n ${(error as Error).message}`}
-        />;
+        // Show error notification
+        notifications.show({
+          title: "Registration Failed",
+          message: `${(error as Error).name}: ${(error as Error).message}`,
+          icon: <IconX size="1.1rem" />,
+          color: "red",
+        });
       }
     } else if (type === "login") {
       try {
-        <Notification
-          icon={<IconCheck size="1.1rem" />}
-          withBorder
-          radius="md"
-          color="green"
-          title={`Login Successful!`}
-        />;
-        navigate("/");
+        const res = await loginUser({
+          uname: values.uname,
+          password: values.password,
+        });
+
+        // Assuming userType is returned in the response
+        const userType = res.userType || "user"; // Use "user" as fallback if userType is undefined
+
+        console.log(res.data.token);
+        // Dispatch action to set user info
+        dispatch(
+          setCurrentUser({
+            username: values.uname,
+            jwtToken: res.data.token,
+            userType: userType, // Dynamically set userType from response
+          })
+        );
+
+        // Show success notification
+        notifications.show({
+          title: "Login Successful",
+          message: `Welcome back, ${values.uname}!`,
+          icon: <IconCheck size="1.1rem" />,
+          color: "green",
+        });
+
+        navigate("/"); // Redirect to the homepage after successful login
       } catch (error) {
-        <Notification
-          icon={<IconX size="1.1rem" />}
-          withBorder
-          radius="md"
-          color="red"
-          title={`${(error as Error).name} \n ${(error as Error).message}`}
-        />;
+        // Show error notification
+        notifications.show({
+          title: "Login Failed",
+          message: `${(error as Error).name}: ${(error as Error).message}`,
+          icon: <IconX size="1.1rem" />,
+          color: "red",
+        });
       }
     }
   };
@@ -95,13 +109,9 @@ const AuthenticationForm = () => {
   return (
     <Container size={"xl"} mt={70}>
       <Paper radius="md" p="xl" withBorder>
-        <Text size="lg">Welcome to Travelo, {type} with</Text>
-
-        <Divider
-          label="Or continue with email"
-          labelPosition="center"
-          my="lg"
-        />
+        <Text size="lg" mb="xl">
+          Welcome to Travelo
+        </Text>
 
         <form onSubmit={form.onSubmit((values) => handleAuth(values))}>
           <Stack>
@@ -119,13 +129,13 @@ const AuthenticationForm = () => {
 
             <TextInput
               required
-              label="Email"
-              placeholder="hello@mantine.dev"
-              value={form.values.email}
+              label="Username"
+              placeholder="Your Username"
+              value={form.values.uname}
               onChange={(event) =>
-                form.setFieldValue("email", event.currentTarget.value)
+                form.setFieldValue("uname", event.currentTarget.value)
               }
-              error={form.errors.email && "Invalid email"}
+              error={form.errors.uname && "Invalid username"}
               radius="md"
             />
 
@@ -143,29 +153,6 @@ const AuthenticationForm = () => {
               }
               radius="md"
             />
-
-            {type === "register" && (
-              <>
-                <Select
-                  required
-                  withAsterisk
-                  label="Select user type"
-                  description="If agent, enter secret key as password"
-                  value={form.values.isAgent.userType}
-                  onChange={(event) =>
-                    form.setFieldValue("isAgent", {
-                      userType: event || "",
-                      pwd: form.values.password,
-                    })
-                  }
-                  data={[
-                    { value: "user", label: "User" },
-                    { value: "agent", label: "Agent" },
-                  ]}
-                  error={form.errors.isAgent && "Secret key doesn't match"}
-                />
-              </>
-            )}
           </Stack>
 
           <Group mt="xl">

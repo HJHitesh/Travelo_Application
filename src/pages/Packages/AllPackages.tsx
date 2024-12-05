@@ -1,66 +1,67 @@
 import { Container, Grid } from "@mantine/core";
 import SearchBar from "./SearchBar/SearchBar";
 import { PackageCard } from "../../components/Package/PackageCard/PackageCard";
+import { getAllPackages } from "../../utils/data/PackageAPI";
+import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { notifications } from "@mantine/notifications";
+import { IconX } from "@tabler/icons-react";
+import { useNavigate } from "react-router-dom";
+
+type Activity = {
+  id: number;
+  activityName: string;
+  activityDescription: string; // Added activityDuration for each activity
+};
+
+type Package = {
+  packageId: string;
+  packageDuration: string;
+  packageName: string;
+  stayDetails: string;
+  country: string;
+  flightDetails: string;
+  packagePrice: string;
+  packageImage: string;
+  activities: Activity[];
+};
 
 const AllPackages = () => {
-  const packageInfo = [
-    {
-      packageName: "Package 1",
-      packageDuration: "5 Days",
-      flightDetails: "Emirates EK 123",
-      country: "Dubai",
-      stayDetails: "5 Star Hotel",
-      activities: ["Desert Safari", "Burj Khalifa", "Dubai Mall"],
-      packagePrice: 500,
-      packageId: "1",
-      packageImage:
-        "https://images.unsplash.com/photo-1489516408517-0c0a15662682",
-    },
-    {
-      packageName: "Package 2",
-      packageDuration: "7 Days",
-      flightDetails: "Qatar Airways QR 456",
-      country: "Maldives",
-      stayDetails: "Water Villa",
-      activities: ["Snorkeling", "Scuba Diving", "Island Hopping"],
-      packagePrice: 800,
-      packageId: "2",
-      packageImage:
-        "https://plus.unsplash.com/premium_photo-1666286163385-abe05f0326c4?q=80&w=2875",
-    },
-    {
-      packageName: "Package 3",
-      packageDuration: "10 Days",
-      flightDetails: "Singapore Airlines SQ 789",
-      country: "Singapore",
-      stayDetails: "Marina Bay Sands",
-      activities: ["Studios", "Gardens by the Bay", "Sentosa"],
-      packagePrice: 1000,
-      packageId: "3",
-      packageImage:
-        "https://plus.unsplash.com/premium_photo-1697730373939-3ebcaa9d295e?q=80&w=2940",
-    },
-    {
-      packageName: "Package 4",
-      packageDuration: "14 Days",
-      flightDetails: "British Airways BA 101",
-      country: "London",
-      stayDetails: "The Ritz London",
-      activities: ["London Eye", "Buckingham Palace", "Tower of London"],
-      packagePrice: 1500,
-      packageId: "4",
-      packageImage:
-        "https://plus.unsplash.com/premium_photo-1671734045770-4b9e1a5e53a0?q=80&w=2874",
-    },
-  ];
+  const user = useSelector(
+    (state: { user: { jwtToken: string } }) => state.user
+  );
+
+  const [packages, setPackages] = useState<Package[]>([]);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    async function fetchData() {
+      const packages = await getAllPackages(user.jwtToken);
+      if (typeof packages == "string") {
+        notifications.show({
+          title: "Error",
+          message: packages,
+          icon: <IconX size="1.1rem" />,
+          color: "red",
+        });
+        navigate("/auth");
+      } else {
+        setPackages(packages);
+      }
+    }
+    fetchData();
+  }, [navigate, user.jwtToken]);
+
   return (
     <Container size={"xl"}>
       <SearchBar />
       <h1>All Packages</h1>
       <Grid gutter={{ base: "xl" }} p={35}>
-        {packageInfo.map((pack) => (
-          <Grid.Col span={4}>
+        {packages?.map((pack, index) => (
+          <Grid.Col key={index} span={4}>
             <PackageCard
+              key={pack.packageId}
               packageName={pack.packageName}
               packageDuration={pack.packageDuration}
               flightDetails={pack.flightDetails}

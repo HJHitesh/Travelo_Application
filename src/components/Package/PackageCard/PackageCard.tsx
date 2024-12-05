@@ -7,7 +7,6 @@ import {
   Group,
   Badge,
   Button,
-  Notification,
   rem,
   Modal,
   Container,
@@ -22,8 +21,18 @@ import {
   IconCheck,
   IconX,
 } from "@tabler/icons-react";
-import { DateInput } from "@mantine/dates";
+import { DatePickerInput } from "@mantine/dates";
 import classes from "./PackageCard.module.css";
+import { useSelector, useDispatch } from "react-redux";
+import { notifications } from "@mantine/notifications";
+import { addItemToCart } from "../../../store/slices/cartSlice"; // Ensure the correct path for the import
+
+// Define the types for Activity and CartItem
+type Activity = {
+  id: number;
+  activityName: string;
+  activityDescription: string; // Added activityDuration for each activity
+};
 
 interface PackageCardProps {
   packageName: string;
@@ -31,13 +40,13 @@ interface PackageCardProps {
   flightDetails: string;
   country: string;
   stayDetails: string;
-  activities: string[];
-  packagePrice: number;
+  activities: Activity[]; // Updated to Activity[] instead of string[]
+  packagePrice: string;
   packageId: string;
   packageImage: string;
 }
 
-export function PackageCard({
+export const PackageCard = ({
   packageName,
   packageDuration,
   flightDetails,
@@ -47,36 +56,97 @@ export function PackageCard({
   packagePrice,
   packageId,
   packageImage,
-}: PackageCardProps) {
+}: PackageCardProps) => {
   const [dateValue, setDateValue] = useState<Date | null>(null);
   const [opened, { open, close }] = useDisclosure(false);
-  const user = {
-    userType: "user",
-  };
+  const user = useSelector(
+    (state: { user: { userType: string } }) => state.user
+  );
+
+  interface CartItem {
+    packageId: string;
+    packageName: string;
+    packagePrice: string;
+    country: string;
+    flightDetails: string;
+    stayDetails: string;
+    activities: Activity[]; // Change activities to match the new type
+    bookDate: string;
+    packageDuration: string;
+    packageImage: string;
+  }
+
+  const cartItems = useSelector(
+    (state: { cartDetails: { cartItems: CartItem[] } }) =>
+      state.cartDetails.cartItems
+  );
+  const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    <Notification
-      icon={<IconCheck size="1.1rem" />}
-      withBorder
-      radius="md"
-      color="green"
-      title={`Package ${packageId} deleted!`}
-    />;
+    notifications.show({
+      title: `Package ${packageId} deleted!`,
+      message: "Package has been successfully deleted.",
+      icon: <IconCheck size="1.1rem" />,
+      color: "green",
+    });
   };
 
   const handleAdd = () => {
-    <Notification
-      icon={<IconX size="1.1rem" />}
-      withBorder
-      radius="md"
-      color="red"
-      title={`Package already added to cart`}
-    />;
+    if (!dateValue) {
+      notifications.show({
+        title: `Select a date`,
+        message: "Please select a booking date.",
+        icon: <IconX size="1.1rem" />,
+        color: "red",
+      });
+      return;
+    }
+    const presentIds = cartItems.map((item) => item.packageId);
+
+    if (!presentIds.includes(packageId)) {
+      if (user !== null) {
+        const cartItem = {
+          packageId,
+          packageName,
+          packagePrice,
+          country,
+          flightDetails,
+          stayDetails,
+          activities: activities.map((activity) => activity.activityName),
+          packageDuration,
+          packageImage,
+          bookDate: dateValue.toDateString(),
+        };
+        dispatch(addItemToCart(cartItem));
+        notifications.show({
+          title: `Package added to cart`,
+          message: "The package has been successfully added.",
+          icon: <IconCheck size="1.1rem" />,
+          color: "green",
+        });
+        close();
+      } else {
+        notifications.show({
+          title: `Login to continue`,
+          message: "Please login to add packages to your cart.",
+          icon: <IconX size="1.1rem" />,
+          color: "red",
+        });
+      }
+    } else {
+      notifications.show({
+        title: `Package already added to cart`,
+        message: "This package is already in your cart.",
+        icon: <IconX size="1.1rem" />,
+        color: "red",
+      });
+    }
   };
 
+  // Map over activities and render badges for each activity
   const features = activities.map((activity) => (
-    <Badge color="dark" key={activity}>
-      {activity}
+    <Badge key={activity.id} color="dark">
+      {activity.activityName}
     </Badge>
   ));
 
@@ -142,6 +212,7 @@ export function PackageCard({
           )}
         </Group>
       </Card>
+
       <Modal
         opened={opened}
         onClose={close}
@@ -155,59 +226,55 @@ export function PackageCard({
         <Container>
           <Image src={packageImage} height={180} />
           <Table striped mt={rem(15)}>
-            <tbody>
-              <tr>
-                <td>
+            <Table.Tbody>
+              <Table.Tr>
+                <Table.Td>
                   <Text fz="lg" fw={"bold"}>
                     Package Name
                   </Text>
-                </td>
-                <td>
+                </Table.Td>
+                <Table.Td>
                   <Text fz="lg" fw={"bold"}>
                     {packageName}
                   </Text>
-                </td>
-              </tr>
-              <tr>
-                <td>Package Duration</td>
-                <td>{packageDuration}</td>
-              </tr>
-              <tr>
-                <td>Flight Details</td>
-                <td>{flightDetails}</td>
-              </tr>
-              <tr>
-                <td>Country</td>
-                <td>{country}</td>
-              </tr>
-              <tr>
-                <td>Stay Details</td>
-                <td>{stayDetails}</td>
-              </tr>
-              <tr>
-                <td>
+                </Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td>Package Duration</Table.Td>
+                <Table.Td>{packageDuration}</Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td>Flight Details</Table.Td>
+                <Table.Td>{flightDetails}</Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td>Country</Table.Td>
+                <Table.Td>{country}</Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td>Stay Details</Table.Td>
+                <Table.Td>{stayDetails}</Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td>
                   <Text fz="md" fw={500}>
                     Package Price
                   </Text>
-                </td>
-                <td>
+                </Table.Td>
+                <Table.Td>
                   <Text fz="md" fw={500}>
                     {packagePrice}
                   </Text>
-                </td>
-              </tr>
-            </tbody>
+                </Table.Td>
+              </Table.Tr>
+            </Table.Tbody>
           </Table>
-          <DateInput
-            allowDeselect
+          <DatePickerInput
+            clearable
             value={dateValue}
-            label="Select your date"
-            placeholder="Date input"
             onChange={setDateValue}
-            leftSection={<IconCalendar />}
-            maw={400}
-            mx="auto"
-            mt={rem(25)}
+            label="Date input"
+            placeholder="Date input"
           />
           <Button radius="md" mt={rem(20)} fullWidth onClick={handleAdd}>
             Add to Cart
@@ -216,4 +283,4 @@ export function PackageCard({
       </Modal>
     </>
   );
-}
+};
