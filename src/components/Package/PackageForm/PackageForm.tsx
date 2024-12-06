@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   createPackage,
   getAllPackages,
@@ -44,15 +44,16 @@ interface PackageFormProps {
 
 const PackageForm = ({ type }: PackageFormProps) => {
   const navigate = useNavigate();
+  const { packageId } = useParams();
   const user = useSelector(
-    (state: { user: { jwtToken: string } }) => state.user
+    (state: { user: { jwtToken: string; userType: string } }) => state.user
   );
 
   const [allPackages, setPackages] = useState<Package[]>([]);
 
   useEffect(() => {
-    async function fetchData() {
-      const packages = await getAllPackages(user.jwtToken);
+    const fetchData = async () => {
+      const packages = await getAllPackages(user.jwtToken, user.userType);
       if (typeof packages === "string") {
         notifications.show({
           title: "Error",
@@ -64,11 +65,48 @@ const PackageForm = ({ type }: PackageFormProps) => {
       } else {
         setPackages(packages);
       }
-    }
+    };
     fetchData();
-  }, [navigate, user.jwtToken]);
+  }, [navigate, user.jwtToken, user.userType]);
 
   const packIds = allPackages.map((pack) => pack.packageId);
+
+  // Define the form
+  const form = useForm<Package>({
+    initialValues: {
+      packageId: "", // Ensure it's an empty string instead of undefined
+      packageName: "",
+      packageDuration: "",
+      packageImage: "",
+      flightDetails: "",
+      country: "",
+      stayDetails: "",
+      activities: [], // Ensure this is an empty array, not undefined
+      packagePrice: "",
+    },
+    validate: {
+      packageId: (val) =>
+        type === "Create" && packIds.includes(val)
+          ? "Package id must be unique"
+          : null,
+      packagePrice: (val) =>
+        !val || isNaN(parseFloat(val)) ? "Invalid price" : null,
+    },
+  });
+
+  useEffect(() => {
+    if (type === "Modify" && packageId) {
+      const selectedPackage = allPackages.find(
+        (pack) => pack.packageId === packageId
+      );
+      if (
+        selectedPackage &&
+        selectedPackage.packageId !== form.values.packageId
+      ) {
+        form.setValues(selectedPackage); // Only update if the data has changed
+      }
+    }
+  }, [packageId, allPackages, type, form]);
 
   const handlePackageForm = async (packDetails: Package) => {
     if (type === "Create") {
@@ -81,40 +119,16 @@ const PackageForm = ({ type }: PackageFormProps) => {
       });
       navigate("/all-packages");
     } else if (type === "Modify") {
-      if (packIds.includes(packDetails.packageId)) {
-        await updatePackage(packDetails, user.jwtToken);
-        notifications.show({
-          title: "Package Modified!",
-          message: "The package has been successfully modified.",
-          icon: <IconX size="1.1rem" />,
-          color: "green",
-        });
-        navigate("/all-packages");
-      }
+      await updatePackage(packDetails, user.jwtToken);
+      notifications.show({
+        title: "Package Modified!",
+        message: "The package has been successfully modified.",
+        icon: <IconX size="1.1rem" />,
+        color: "green",
+      });
+      navigate("/all-packages");
     }
   };
-
-  const form = useForm<Package>({
-    initialValues: {
-      packageId: "",
-      packageName: "",
-      packageDuration: "",
-      packageImage: "",
-      flightDetails: "",
-      country: "",
-      stayDetails: "",
-      activities: [],
-      packagePrice: "",
-    },
-    validate: {
-      packageId: (val) =>
-        type === "Create" && packIds.includes(val)
-          ? "Package id must be unique"
-          : null,
-      packagePrice: (val) =>
-        !val || isNaN(parseFloat(val)) ? "Invalid price" : null,
-    },
-  });
 
   const addActivity = () => {
     form.setFieldValue("activities", [
@@ -147,7 +161,7 @@ const PackageForm = ({ type }: PackageFormProps) => {
     <Container size={450} my={40}>
       <Paper radius="md" p="xl" withBorder>
         <Text size="xl" fw={500}>
-          {type} package
+          {type} Package
         </Text>
         <Text mt={20} size="lg" fw={600}>
           {type === "Create"

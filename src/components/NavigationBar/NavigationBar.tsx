@@ -20,7 +20,6 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconCards,
   IconPlus,
-  IconPencil,
   IconChevronDown,
   IconLogout,
 } from "@tabler/icons-react";
@@ -42,12 +41,6 @@ const adminData = [
     title: "Add Package",
     description: "Create a new Travel Package",
     to: "/create-package",
-  },
-  {
-    icon: IconPencil,
-    title: "Modify Package",
-    description: "Modify an existing Travel Package",
-    to: "/modify-package",
   },
 ];
 

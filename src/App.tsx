@@ -16,7 +16,7 @@ const App = () => {
         <Route path="/all-packages" element={<AllPackages />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/create-package" element={<CreatePackage />} />
-        <Route path="/modify-package" element={<ModifyPackage />} />
+        <Route path="/modify-package/:packageId" element={<ModifyPackage />} />
       </Route>
     </Routes>
   );

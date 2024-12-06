@@ -24,28 +24,31 @@ import { DatePickerInput } from "@mantine/dates";
 import classes from "./PackageCard.module.css";
 import { useSelector, useDispatch } from "react-redux";
 import { notifications } from "@mantine/notifications";
-import { addItemToCart } from "../../../store/slices/cartSlice"; // Ensure the correct path for the import
+import { addItemToCart } from "../../../store/slices/cartSlice";
+import { Link, useNavigate } from "react-router-dom";
+import { deletePackage } from "../../../utils/data/PackageAPI";
 
-// Define the types for Activity and CartItem
 type Activity = {
   id: number;
   activityName: string;
-  activityDescription: string; // Added activityDuration for each activity
+  activityDescription: string;
 };
 
 interface PackageCardProps {
+  id: string;
   packageName: string;
   packageDuration: string;
   flightDetails: string;
   country: string;
   stayDetails: string;
-  activities: Activity[]; // Updated to Activity[] instead of string[]
+  activities: Activity[];
   packagePrice: string;
   packageId: string;
   packageImage: string;
 }
 
 export const PackageCard = ({
+  id,
   packageName,
   packageDuration,
   flightDetails,
@@ -59,8 +62,10 @@ export const PackageCard = ({
   const [dateValue, setDateValue] = useState<Date | null>(null);
   const [opened, { open, close }] = useDisclosure(false);
   const user = useSelector(
-    (state: { user: { userType: string } }) => state.user
+    (state: { user: { userType: string; jwtToken: string } }) => state.user
   );
+
+  const navigate = useNavigate();
 
   interface CartItem {
     packageId: string;
@@ -82,12 +87,23 @@ export const PackageCard = ({
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    notifications.show({
-      title: `Package ${packageId} deleted!`,
-      message: "Package has been successfully deleted.",
-      icon: <IconCheck size="1.1rem" />,
-      color: "green",
-    });
+    try {
+      await deletePackage(id, user.jwtToken);
+      notifications.show({
+        title: `Package ${packageId} deleted!`,
+        message: "Package has been successfully deleted.",
+        icon: <IconCheck size="1.1rem" />,
+        color: "green",
+      });
+      navigate(0);
+    } catch (error) {
+      notifications.show({
+        title: "Error",
+        message: "Failed to delete package.",
+        icon: <IconX size="1.1rem" />,
+        color: "red",
+      });
+    }
   };
 
   const handleAdd = () => {
@@ -196,14 +212,14 @@ export const PackageCard = ({
             $ {packagePrice}
           </Text>
           {user !== null && user.userType === "admin" ? (
-            <Button
-              radius="md"
-              color="red"
-              style={{ flex: 1 }}
-              onClick={handleDelete}
-            >
-              Delete Package
-            </Button>
+            <Group justify="center">
+              <Link to={`/modify-package/${packageId}`}>
+                <Button radius="md">Edit Package</Button>
+              </Link>
+              <Button radius="md" color="red" onClick={handleDelete}>
+                Delete Package
+              </Button>
+            </Group>
           ) : (
             <Button radius="md" style={{ flex: 1 }} onClick={open}>
               Select Package

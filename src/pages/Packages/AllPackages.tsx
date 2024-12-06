@@ -3,7 +3,7 @@ import SearchBar from "./SearchBar/SearchBar";
 import { PackageCard } from "../../components/Package/PackageCard/PackageCard";
 import { getAllPackages } from "../../utils/data/PackageAPI";
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { IconX } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +15,7 @@ type Activity = {
 };
 
 type Package = {
+  id: string;
   packageId: string;
   packageDuration: string;
   packageName: string;
@@ -28,30 +29,32 @@ type Package = {
 
 const AllPackages = () => {
   const user = useSelector(
-    (state: { user: { jwtToken: string } }) => state.user
+    (state: { user: { jwtToken: string; userType: string } }) => state.user
   );
 
   const [packages, setPackages] = useState<Package[]>([]);
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    async function fetchData() {
-      const packages = await getAllPackages(user.jwtToken);
-      if (typeof packages == "string") {
-        notifications.show({
-          title: "Error",
-          message: packages,
-          icon: <IconX size="1.1rem" />,
-          color: "red",
-        });
-        navigate("/auth");
-      } else {
-        setPackages(packages);
-      }
+  // Function to fetch all packages
+  const fetchData = useCallback(async () => {
+    const packages = await getAllPackages(user.jwtToken, user.userType);
+    if (typeof packages === "string") {
+      notifications.show({
+        title: "Error",
+        message: packages,
+        icon: <IconX size="1.1rem" />,
+        color: "red",
+      });
+      navigate("/auth");
+    } else {
+      setPackages(packages);
     }
+  }, [user.jwtToken, user.userType, navigate]);
+
+  useEffect(() => {
     fetchData();
-  }, [navigate, user.jwtToken]);
+  }, [fetchData]);
 
   return (
     <Container size={"xl"}>
@@ -62,6 +65,7 @@ const AllPackages = () => {
           <Grid.Col key={index} span={4}>
             <PackageCard
               key={pack.packageId}
+              id={pack.id}
               packageName={pack.packageName}
               packageDuration={pack.packageDuration}
               flightDetails={pack.flightDetails}

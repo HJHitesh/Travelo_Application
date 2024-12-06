@@ -3,7 +3,7 @@ import axios from "axios";
 type Activity = {
   id: number;
   activityName: string;
-  activityDescription: string;
+  activityDuration: string;
 };
 
 type Package = {
@@ -18,82 +18,103 @@ type Package = {
   activities: Activity[];
 };
 
-export async function getAllPackages(jwtToken: string): Promise<Package[]> {
+// Fetch all packages
+export const getAllPackages = async (
+  jwtToken: string,
+  userType: string
+): Promise<Package[]> => {
+  const url =
+    userType === "admin"
+      ? "http://localhost:8081/api/admin/packages"
+      : "http://localhost:8081/api/packages";
+
   try {
-    const response = await axios.get("http://localhost:8081/api/packages", {
+    const { data } = await axios.get(url, {
       headers: {
         Authorization: `Bearer ${jwtToken}`,
       },
     });
 
-    const data = await response.data;
-
-    const packages = data.map((pkg: Package) => ({
+    return data.map((pkg: Package) => ({
       ...pkg,
-      activities: pkg.activities.map((activity: Activity) => ({
-        id: activity.id,
-        activityName: activity.activityName,
-        activityDuration: activity.activityDescription,
-      })),
+      activities: pkg.activities.map(
+        ({ id, activityName, activityDuration }) => ({
+          id,
+          activityName,
+          activityDuration: activityDuration, // Assuming field meant to be activityDescription
+        })
+      ),
     }));
-
-    return packages;
-  } catch (error) {
-    return error.response.data.message;
-  }
-}
-
-export const createPackage = async (pkg: Package, jwtToken: string) => {
-  try {
-    const response = await axios.post(
-      "http://localhost:8081/api/admin/packages",
-      {
-        packageDuration: pkg.packageDuration,
-        packageName: pkg.packageName,
-        stayDetails: pkg.stayDetails,
-        country: pkg.country,
-        flightDetails: pkg.flightDetails,
-        packagePrice: pkg.packagePrice,
-        packageImage: pkg.packageImage,
-        activities: pkg.activities,
-        packageId: pkg.packageId,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${jwtToken}`,
-        },
-      }
+  } catch (error: any) {
+    console.error(
+      "Error fetching packages:",
+      error?.response?.data || error.message
     );
-    return response.data;
-  } catch (error) {
-    return error.response.data.message;
+    return []; // Return empty array if error occurs
   }
 };
 
-export const updatePackage = async (pkg: Package, jwtToken: string) => {
-  console.log(pkg, jwtToken);
+// Create a new package
+export const createPackage = async (pkg: Package, jwtToken: string) => {
   try {
-    const response = await axios.put(
-      `http://localhost:8081/api/admin/packages/${pkg.packageId}`,
-      {
-        packageDuration: pkg.packageDuration,
-        packageName: pkg.packageName,
-        stayDetails: pkg.stayDetails,
-        country: pkg.country,
-        flightDetails: pkg.flightDetails,
-        packagePrice: pkg.packagePrice,
-        packageImage: pkg.packageImage,
-        activities: pkg.activities,
-        packageId: pkg.packageId,
-      },
+    const { data } = await axios.post(
+      "http://localhost:8081/api/admin/packages",
+      { ...pkg }, // Spread operator to send package fields
       {
         headers: {
           Authorization: `Bearer ${jwtToken}`,
         },
       }
     );
-    return response.data;
-  } catch (error) {
-    return error.response.data.message;
+    return data;
+  } catch (error: any) {
+    console.error(
+      "Error creating package:",
+      error?.response?.data || error.message
+    );
+    return error.response?.data?.message || "Error creating package";
+  }
+};
+
+// Update an existing package
+export const updatePackage = async (pkg: Package, jwtToken: string) => {
+  try {
+    const { data } = await axios.put(
+      `http://localhost:8081/api/admin/packages/${pkg.packageId}`,
+      { ...pkg }, // Spread operator to send package fields
+      {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      }
+    );
+    return data;
+  } catch (error: any) {
+    console.error(
+      "Error updating package:",
+      error?.response?.data || error.message
+    );
+    return error.response?.data?.message || "Error updating package";
+  }
+};
+
+// Delete a package
+export const deletePackage = async (packageId: string, jwtToken: string) => {
+  try {
+    const { data } = await axios.delete(
+      `http://localhost:8081/api/admin/packages/${packageId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      }
+    );
+    return data;
+  } catch (error: any) {
+    console.error(
+      "Error deleting package:",
+      error?.response?.data || error.message
+    );
+    return error.response?.data?.message || "Error deleting package";
   }
 };
