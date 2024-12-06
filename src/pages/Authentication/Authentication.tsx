@@ -73,7 +73,7 @@ const AuthenticationForm = () => {
         });
 
         // Assuming userType is returned in the response
-        const userType = res.userType || "user"; // Use "user" as fallback if userType is undefined
+        const userType = values.uname == "admin_user" ? "admin" : "user"; // Use "user" as fallback if userType is undefined
 
         console.log(res.data.token);
         // Dispatch action to set user info

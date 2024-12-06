@@ -17,7 +17,6 @@ import {
   IconCalendarTime,
   IconPlaneInflight,
   IconBuilding,
-  IconCalendar,
   IconCheck,
   IconX,
 } from "@tabler/icons-react";
@@ -196,7 +195,7 @@ export const PackageCard = ({
           <Text fw={"bold"} fz="lg">
             $ {packagePrice}
           </Text>
-          {user !== null && user.userType === "Agent" ? (
+          {user !== null && user.userType === "admin" ? (
             <Button
               radius="md"
               color="red"

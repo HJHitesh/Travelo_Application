@@ -105,9 +105,9 @@ const NavigationBar = () => {
   const theme = useMantineTheme();
   const dispatch = useDispatch();
   const user = useSelector(
-    (state: { user: { username: string; role: string } }) => state.user
+    (state: { user: { username: string; userType: string } }) => state.user
   );
-  const links = user?.role === "admin" ? adminData : userData;
+  const links = user?.userType === "admin" ? adminData : userData;
 
   const handleLogout = () => {
     dispatch(logout());
@@ -147,7 +147,7 @@ const NavigationBar = () => {
                 </Group>
                 <Divider my="sm" />
                 <SimpleGrid cols={2} spacing={20}>
-                  {user?.role === "admin" ? (
+                  {user?.userType === "admin" ? (
                     <NavigationLinks data={adminData} theme={theme} />
                   ) : (
                     <NavigationLinks data={userData} theme={theme} />
@@ -161,7 +161,7 @@ const NavigationBar = () => {
           <Group visibleFrom="sm">
             {user.username !== null ? (
               <Group>
-                <CartIcon />
+                {user.userType === "user" ? <CartIcon /> : <></>}
                 <Button
                   variant="default"
                   onClick={handleLogout}
